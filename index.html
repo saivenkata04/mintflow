@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MINTFLOW - An interactive personal finance decision simulator for Gen Z managing ₹10,000 over 30 days. Connect balance, bills, savings, risks, and simulated choices." />
+  <meta name="theme-color" content="#0B0F19" />
+  <title>MINTFLOW — Gen Z ₹10,000 / 30-Day Financial Decision Lab</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body class="dark-theme">
+  <!-- Ambient glow backdrop -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+
+  <!-- Header / Navigation -->
+  <header class="app-header" role="banner">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-logo" tabindex="0">
+          <span class="logo-icon" aria-hidden="true">⚡</span>
+          <span class="logo-title">MINTFLOW</span>
+        </div>
+        <span class="brand-badge" aria-label="Program scope: 10,000 rupees over 30 days">₹10K / 30-DAY LAB</span>
+      </div>
+
+      <!-- Center Day Stepper -->
+      <div class="day-stepper-control" role="group" aria-label="Timeline navigation controls">
+        <button id="prev-day-btn" class="icon-btn-round" aria-label="Step back one day" title="Previous Day">‹</button>
+        <div class="day-indicator" id="day-indicator-btn" role="status" aria-live="polite" title="Current day in budget period">
+          <span class="day-glow-dot" aria-hidden="true"></span>
+          <span class="day-label" id="current-day-label">Day 6</span>
+          <span class="day-sub">of 30 Days</span>
+        </div>
+        <button id="next-day-btn" class="icon-btn-round" aria-label="Advance to next day" title="Advance to Next Day">+1 D ›</button>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="header-actions">
+        <div class="tone-selector-wrap">
+          <label for="advisor-tone-select" class="sr-only">Choose AI Advisor Tone</label>
+          <span class="tone-icon" aria-hidden="true">🤖</span>
+          <select id="advisor-tone-select" class="custom-select" title="Choose AI Advisor Tone" aria-label="AI Advisor Tone Persona">
+            <option value="straight_talk">Straight Talk 🔥</option>
+            <option value="gentle_bestie">Gentle Bestie 🌸</option>
+            <option value="wall_street">Wall Street Bro 💼</option>
+          </select>
+        </div>
+
+        <button id="sound-toggle-btn" class="icon-btn" aria-label="Toggle tactile sound effects" title="Toggle Haptic Sound">
+          <span id="sound-icon" aria-hidden="true">🔊</span>
+        </button>
+
+        <button id="reset-state-btn" class="icon-btn" aria-label="Reset simulation to initial state" title="Reset Demo Data">
+          <span aria-hidden="true">🔄</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="app-main" id="main-content">
+    
+    <!-- TOP HUD: LIVE FINANCIAL VITALS -->
+    <section class="vitals-hud-grid" aria-label="Key Financial Metrics">
+      <!-- Card 1: Live Balance -->
+      <div class="hud-card" id="hud-balance-card" role="region" aria-labelledby="lbl-balance">
+        <div class="hud-card-header">
+          <span class="hud-label" id="lbl-balance">Remaining Balance</span>
+          <span class="hud-icon-badge" aria-hidden="true">💳</span>
+        </div>
+        <div class="hud-value-row">
+          <span class="currency-symbol" aria-hidden="true">₹</span>
+          <span class="hud-value" id="hud-balance-val" aria-live="polite">--</span>
+        </div>
+        <div class="hud-sub-info">
+          <span class="sub-tag" id="hud-balance-sub">₹10,000 Monthly Budget</span>
+          <span class="hud-locked-note" id="hud-reserved-bills">₹0 in upcoming bills</span>
+        </div>
+        <div class="hud-progress-bar" role="progressbar" aria-label="Remaining Balance Percentage" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+          <div class="hud-progress-fill" id="hud-balance-fill" style="width: 75%"></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Safe Daily Allowance -->
+      <div class="hud-card highlight-mint" id="hud-daily-card" role="region" aria-labelledby="lbl-daily">
+        <div class="hud-card-header">
+          <span class="hud-label" id="lbl-daily">Safe-to-Spend Daily</span>
+          <span class="status-pill safe" id="hud-daily-status">Paced</span>
+        </div>
+        <div class="hud-value-row">
+          <span class="currency-symbol" aria-hidden="true">₹</span>
+          <span class="hud-value text-mint" id="hud-daily-val" aria-live="polite">--</span>
+          <span class="per-day">/ day</span>
+        </div>
+        <div class="hud-sub-info">
+          <span id="hud-daily-sub">For the next 24 days</span>
+          <span class="hud-burn-compare" id="hud-actual-burn">Actual: ₹0/d</span>
+        </div>
+        <div class="hud-daily-pill-bar">
+          <span class="hud-daily-tip">Spend under this today to preserve runway!</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Financial Health Score -->
+      <div class="hud-card" id="hud-health-card" role="region" aria-labelledby="lbl-health">
+        <div class="hud-card-header">
+          <span class="hud-label" id="lbl-health">Financial Health</span>
+          <span class="vibe-emoji" id="hud-vibe-emoji" aria-hidden="true">😎</span>
+        </div>
+        <div class="hud-value-row score-row">
+          <div class="circular-score-wrapper" role="img" aria-label="Financial Health Score out of 100">
+            <svg class="score-svg" viewBox="0 0 36 36" aria-hidden="true">
+              <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="circle-fill" id="score-circle-path" stroke-dasharray="75, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <span class="score-number" id="hud-score-val" aria-live="polite">--</span>
+          </div>
+          <div class="score-meta">
+            <div class="vibe-title" id="hud-vibe-title">Chill & Steady</div>
+            <div class="score-subtitle" id="hud-runway-status">Runway: 28 Days</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Risk Radar -->
+      <div class="hud-card" id="hud-risk-card" role="region" aria-labelledby="lbl-risk">
+        <div class="hud-card-header">
+          <span class="hud-label" id="lbl-risk">Risk Radar & Runway</span>
+          <span class="risk-badge" id="hud-risk-badge">Low Risk</span>
+        </div>
+        <div class="hud-value-row">
+          <span class="hud-risk-forecast-title" id="hud-forecast-lead">Day 30 Finish:</span>
+          <span class="hud-forecast-amt" id="hud-forecast-val" aria-live="polite">+₹0</span>
+        </div>
+        <div class="hud-sub-info">
+          <span class="risk-desc" id="hud-risk-desc">Calculating budget risk...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="app-tabs-nav" role="tablist" aria-label="Main Application Views">
+      <button class="tab-btn active" role="tab" id="tab-btn-dashboard" aria-selected="true" aria-controls="tab-dashboard" data-tab="tab-dashboard">
+        <span class="tab-icon" aria-hidden="true">📊</span>
+        <span class="tab-text">Overview & Forecast</span>
+      </button>
+      <button class="tab-btn highlight-tab" role="tab" id="tab-btn-simulator" aria-selected="false" aria-controls="tab-simulator" data-tab="tab-simulator">
+        <span class="tab-icon" aria-hidden="true">⚡</span>
+        <span class="tab-text">Decision Simulator</span>
+        <span class="tab-pulse-badge" aria-hidden="true">What-If</span>
+      </button>
+      <button class="tab-btn" role="tab" id="tab-btn-commitments" aria-selected="false" aria-controls="tab-commitments" data-tab="tab-commitments">
+        <span class="tab-icon" aria-hidden="true">📑</span>
+        <span class="tab-text">Bills & Subscriptions</span>
+        <span class="tab-count-badge" id="tab-bills-count" aria-label="5 active bills">5</span>
+      </button>
+      <button class="tab-btn" role="tab" id="tab-btn-savings" aria-selected="false" aria-controls="tab-savings" data-tab="tab-savings">
+        <span class="tab-icon" aria-hidden="true">🛡️</span>
+        <span class="tab-text">Savings Vault</span>
+        <span class="tab-count-badge" id="tab-savings-count" aria-label="2 savings targets">2</span>
+      </button>
+      <button class="tab-btn" role="tab" id="tab-btn-feed" aria-selected="false" aria-controls="tab-feed" data-tab="tab-feed">
+        <span class="tab-icon" aria-hidden="true">📜</span>
+        <span class="tab-text">Transactions & Shocks</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: OVERVIEW & 30-DAY TRAJECTORY FORECAST -->
+    <section class="tab-panel active" id="tab-dashboard" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-dashboard">
+      <div class="dashboard-grid">
+        
+        <!-- Left Column: Forecast Chart & Timeline Scrubber -->
+        <div class="chart-section card-box">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">30-Day Cashflow Trajectory Forecast</h2>
+              <p class="section-subtitle">Real-time simulation of safe path vs actual spend vs upcoming bill impacts</p>
+            </div>
+            <div class="chart-legend" aria-label="Chart legend">
+              <span class="legend-item"><span class="legend-dot safe" aria-hidden="true"></span> Safe Path</span>
+              <span class="legend-item"><span class="legend-dot sim" aria-hidden="true"></span> What-If Path</span>
+              <span class="legend-item"><span class="legend-dot bill" aria-hidden="true"></span> Bill Due Day</span>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="canvas-wrapper">
+            <canvas id="forecast-canvas" width="800" height="300" role="img" aria-label="30-day balance trajectory chart comparing safe path and what-if simulation"></canvas>
+            <div id="chart-tooltip" class="chart-tooltip" role="tooltip" aria-hidden="true"></div>
+          </div>
+
+          <!-- 30-Day Scrubber Bar -->
+          <div class="timeline-scrubber-card">
+            <div class="scrubber-header">
+              <span class="scrubber-title">⏱️ 30-Day Budget Timeline</span>
+              <div class="timeline-quick-actions">
+                <button id="scrubber-advance-btn" class="btn btn-primary-mint btn-sm">
+                  Advance +1 Day ›
+                </button>
+                <button id="roll-shock-btn" class="btn btn-secondary btn-sm">
+                  Roll Life Shock 🎲
+                </button>
+              </div>
+            </div>
+            <div class="range-slider-wrap">
+              <label for="day-range-slider" class="sr-only">30-Day Timeline Slider</label>
+              <input type="range" id="day-range-slider" min="1" max="30" value="6" step="1" class="day-slider" aria-label="Timeline day selector" aria-valuemin="1" aria-valuemax="30" aria-valuenow="6" />
+              <div class="slider-ticks" aria-hidden="true">
+                <span>D1</span>
+                <span>D5</span>
+                <span>D10</span>
+                <span>D15</span>
+                <span>D20</span>
+                <span>D25</span>
+                <span>D30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Quick Reality Breakdown & Quick Spends -->
+        <div class="sidebar-metrics card-box">
+          <h3 class="section-title">Budget Allocation</h3>
+          <p class="section-subtitle">How your ₹10,000 is distributed right now</p>
+
+          <div class="distribution-bars" role="region" aria-label="Budget Allocation Breakdown">
+            <div class="dist-row">
+              <div class="dist-info">
+                <span>Spent so far</span>
+                <strong id="dist-spent-val">₹0</strong>
+              </div>
+              <div class="dist-track"><div class="dist-fill fill-spent" id="dist-spent-bar"></div></div>
+            </div>
+
+            <div class="dist-row">
+              <div class="dist-info">
+                <span>Upcoming Commitments (Bills)</span>
+                <strong id="dist-bills-val">₹0</strong>
+              </div>
+              <div class="dist-track"><div class="dist-fill fill-bills" id="dist-bills-bar"></div></div>
+            </div>
+
+            <div class="dist-row">
+              <div class="dist-info">
+                <span>Locked in Savings Vault</span>
+                <strong id="dist-savings-val">₹0</strong>
+              </div>
+              <div class="dist-track"><div class="dist-fill fill-savings" id="dist-savings-bar"></div></div>
+            </div>
+
+            <div class="dist-row">
+              <div class="dist-info">
+                <span>Free Safe Runway</span>
+                <strong id="dist-runway-val" class="text-mint">₹0</strong>
+              </div>
+              <div class="dist-track"><div class="dist-fill fill-runway" id="dist-runway-bar"></div></div>
+            </div>
+          </div>
+
+          <div class="quick-action-dock">
+            <button id="open-add-expense-btn" class="btn btn-primary-mint w-full">
+              + Log Expense / Income
+            </button>
+            <button id="jump-to-simulator-btn" class="btn btn-outline-cyan w-full">
+              ⚡ Test What-If Splurge
+            </button>
+          </div>
+
+          <!-- Upcoming Bill Alert Box -->
+          <div class="upcoming-bill-alert" id="upcoming-bill-alert" role="status">
+            <div class="alert-bell" aria-hidden="true">🔔</div>
+            <div class="alert-content">
+              <div class="alert-title" id="next-bill-title">Next Bill Due</div>
+              <div class="alert-sub" id="next-bill-sub">Day 10 • Shared Wi-Fi (₹450)</div>
+            </div>
+            <button id="pay-next-bill-quick" class="btn btn-ghost btn-sm">Pay Now</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 2: "BEFORE YOU SWIPE" DECISION SIMULATOR (THE CORE FEATURE) -->
+    <section class="tab-panel" id="tab-simulator" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-simulator">
+      <div class="simulator-layout">
+        
+        <!-- Left: Simulator Inputs & Presets -->
+        <div class="card-box sim-controls-card">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">⚡ Before You Swipe: Decision Sandbox</h2>
+              <p class="section-subtitle">Simulate any financial move and see exactly how it impacts your daily allowance, savings, and survival risk before spending a single rupee.</p>
+            </div>
+          </div>
+
+          <!-- Quick Gen Z Presets -->
+          <div class="presets-section">
+            <span class="control-label" id="presets-label">Quick Gen Z Scenarios:</span>
+            <div class="presets-grid" id="sim-presets-grid" role="group" aria-labelledby="presets-label">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="divider-text" aria-hidden="true"><span>OR BUILD CUSTOM SCENARIO</span></div>
+
+          <!-- Custom Decision Form -->
+          <form id="custom-sim-form" class="custom-sim-form" aria-label="Custom Simulation Builder">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="sim-title">Decision Title</label>
+                <input type="text" id="sim-title" placeholder="e.g. New jacket on sale" value="Weekend Concert Pass" required />
+              </div>
+              <div class="form-group">
+                <label for="sim-amount">Amount (₹)</label>
+                <input type="number" id="sim-amount" placeholder="e.g. 1500" value="1400" min="10" max="50000" required />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="sim-category">Category</label>
+                <select id="sim-category">
+                  <option value="entertainment">Entertainment & Parties 🪩</option>
+                  <option value="food">Food & Late Night Binge 🍕</option>
+                  <option value="lifestyle">Shopping & Drip 👟</option>
+                  <option value="transit">Cab & Travel 🚗</option>
+                  <option value="essentials">Repairs & Study 📱</option>
+                  <option value="social">Friend Outings ☕</option>
+                  <option value="subscriptions">Subscriptions 🔄</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="sim-type">Action Type</label>
+                <select id="sim-type">
+                  <option value="expense">Outflow (Expense 💸)</option>
+                  <option value="income">Inflow (Side Gig / Paycheck 💰)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="sim-range">Amount Quick Slider: <strong id="sim-range-val">₹1,400</strong></label>
+              <input type="range" id="sim-range" min="100" max="5000" step="50" value="1400" class="styled-range" aria-label="Amount quick adjustment slider" />
+            </div>
+
+            <div class="sim-actions-bar">
+              <button type="submit" id="sim-run-btn" class="btn btn-outline-cyan">
+                ⚡ Recalculate Simulation
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Real-Time Ripple Effects Matrix & AI Advisor Verdict -->
+        <div class="card-box sim-impact-card">
+          <div class="sim-impact-header">
+            <h3 class="section-title">Ripple Effect Matrix</h3>
+            <span class="active-sim-badge" id="sim-status-badge">Simulation Active</span>
+          </div>
+
+          <!-- Comparison Table Cards -->
+          <div class="matrix-grid" role="region" aria-label="Simulation Impact Matrix">
+            
+            <!-- Metric 1: Remaining Balance -->
+            <div class="matrix-tile">
+              <div class="tile-header">
+                <span class="tile-label">Remaining Balance</span>
+                <span class="tile-icon" aria-hidden="true">💳</span>
+              </div>
+              <div class="tile-comparison">
+                <div class="comp-col">
+                  <span class="col-lbl">Current</span>
+                  <span class="col-val" id="mat-cur-balance">₹7,870</span>
+                </div>
+                <div class="comp-arrow" aria-hidden="true">➔</div>
+                <div class="comp-col">
+                  <span class="col-lbl">Simulated</span>
+                  <span class="col-val font-bold" id="mat-sim-balance">₹6,470</span>
+                </div>
+              </div>
+              <div class="tile-delta" id="mat-delta-balance">-₹1,400</div>
+            </div>
+
+            <!-- Metric 2: Safe Daily Allowance -->
+            <div class="matrix-tile highlight-tile">
+              <div class="tile-header">
+                <span class="tile-label">Safe Daily Allowance</span>
+                <span class="tile-icon" aria-hidden="true">🎯</span>
+              </div>
+              <div class="tile-comparison">
+                <div class="comp-col">
+                  <span class="col-lbl">Current</span>
+                  <span class="col-val" id="mat-cur-daily">₹245/d</span>
+                </div>
+                <div class="comp-arrow" aria-hidden="true">➔</div>
+                <div class="comp-col">
+                  <span class="col-lbl">Simulated</span>
+                  <span class="col-val font-bold text-mint" id="mat-sim-daily">₹187/d</span>
+                </div>
+              </div>
+              <div class="tile-delta" id="mat-delta-daily">-₹58/day for 24 days</div>
+            </div>
+
+            <!-- Metric 3: Financial Health Score -->
+            <div class="matrix-tile">
+              <div class="tile-header">
+                <span class="tile-label">Health Score</span>
+                <span class="tile-icon" aria-hidden="true">⚡</span>
+              </div>
+              <div class="tile-comparison">
+                <div class="comp-col">
+                  <span class="col-lbl">Current</span>
+                  <span class="col-val" id="mat-cur-health">78 pts</span>
+                </div>
+                <div class="comp-arrow" aria-hidden="true">➔</div>
+                <div class="comp-col">
+                  <span class="col-lbl">Simulated</span>
+                  <span class="col-val font-bold" id="mat-sim-health">66 pts</span>
+                </div>
+              </div>
+              <div class="tile-delta" id="mat-delta-health">-12 pts</div>
+            </div>
+
+            <!-- Metric 4: Day 30 Finish -->
+            <div class="matrix-tile">
+              <div class="tile-header">
+                <span class="tile-label">Day 30 Finish</span>
+                <span class="tile-icon" aria-hidden="true">🏁</span>
+              </div>
+              <div class="tile-comparison">
+                <div class="comp-col">
+                  <span class="col-lbl">Current</span>
+                  <span class="col-val" id="mat-cur-finish">+₹620</span>
+                </div>
+                <div class="comp-arrow" aria-hidden="true">➔</div>
+                <div class="comp-col">
+                  <span class="col-lbl">Simulated</span>
+                  <span class="col-val font-bold" id="mat-sim-finish">-₹780</span>
+                </div>
+              </div>
+              <div class="tile-delta" id="mat-delta-finish">Risk of Deficit</div>
+            </div>
+
+          </div>
+
+          <!-- Gen Z AI Advisor Card -->
+          <div class="advisor-verdict-box" id="advisor-verdict-box" role="region" aria-live="polite">
+            <div class="advisor-header">
+              <span class="advisor-avatar" aria-hidden="true">🤖</span>
+              <div class="advisor-meta">
+                <strong class="advisor-name">MintFlow Reality Check</strong>
+                <span class="advisor-tag" id="advisor-tone-tag">Straight Talk Mode 🔥</span>
+              </div>
+            </div>
+            <div class="advisor-headline" id="advisor-headline">
+              Hold up! Spending this right now puts you in danger zone. ⚠️
+            </div>
+            <p class="advisor-analysis" id="advisor-analysis">
+              Dropping ₹1,400 cuts your daily food and travel allowance by -₹58/day for the next 24 days.
+            </p>
+            <div class="advisor-recommendation" id="advisor-recommendation">
+              💡 <strong>Smart Counter-move:</strong> Wait until Day 22 or earn a ₹600 gig before committing.
+            </div>
+          </div>
+
+          <!-- Commit or Discard Buttons -->
+          <div class="sim-commit-buttons">
+            <button id="commit-decision-btn" class="btn btn-primary-mint btn-lg">
+              ✅ Commit Decision to Ledger
+            </button>
+            <button id="discard-sim-btn" class="btn btn-ghost btn-lg">
+              ❌ Discard Simulation
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: BILLS & COMMITMENTS VAULT -->
+    <section class="tab-panel" id="tab-commitments" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-commitments">
+      <div class="card-box">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">📑 Commitments & Subscriptions Vault</h2>
+            <p class="section-subtitle">Fixed monthly obligations that automatically lock cash from your ₹10,000 budget</p>
+          </div>
+          <button id="open-add-commitment-btn" class="btn btn-primary-mint btn-sm">
+            + Add Bill / Subscription
+          </button>
+        </div>
+
+        <div class="commitments-summary-bar" role="region" aria-label="Commitments Total Breakdown">
+          <div class="comm-stat">
+            <span class="stat-lbl">Total Fixed Commitments:</span>
+            <strong class="stat-val" id="comm-total-all">₹1,707</strong>
+          </div>
+          <div class="comm-stat">
+            <span class="stat-lbl">Remaining Unpaid:</span>
+            <strong class="stat-val text-amber" id="comm-total-pending">₹1,707</strong>
+          </div>
+          <div class="comm-stat">
+            <span class="stat-lbl">Daily Runway Cost:</span>
+            <strong class="stat-val text-cyan" id="comm-daily-impact">~₹57/day</strong>
+          </div>
+        </div>
+
+        <!-- Commitments Grid -->
+        <div class="commitments-grid" id="commitments-list" role="list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SAVINGS VAULT & CUSHIONS -->
+    <section class="tab-panel" id="tab-savings" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-savings">
+      <div class="card-box">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">🛡️ Savings Vault & Cushions</h2>
+            <p class="section-subtitle">Protected funds to prevent debt shocks and build long-term Gen Z wealth</p>
+          </div>
+          <button id="open-add-goal-btn" class="btn btn-primary-mint btn-sm">
+            + New Savings Target
+          </button>
+        </div>
+
+        <div class="savings-vault-hero">
+          <div class="vault-shield-icon" aria-hidden="true">🛡️</div>
+          <div class="vault-hero-info">
+            <div class="vault-total-label">Total Cash Locked in Vault</div>
+            <div class="vault-total-amount" id="vault-total-val" aria-live="polite">₹1,400</div>
+            <p class="vault-hint">Locked cash is removed from your safe daily allowance so you never accidentally spend it on late-night takeout.</p>
+          </div>
+        </div>
+
+        <!-- Goals Grid -->
+        <div class="savings-grid" id="savings-goals-list" role="list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PASSBOOK & LIFE EVENTS FEED -->
+    <section class="tab-panel" id="tab-feed" role="tabpanel" tabindex="0" aria-labelledby="tab-btn-feed">
+      <div class="card-box">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">📜 Transactions & Surprise Life Feed</h2>
+            <p class="section-subtitle">Complete ledger of your ₹10,000 budget journey over 30 days</p>
+          </div>
+          <div class="feed-header-actions">
+            <button id="feed-roll-shock-btn" class="btn btn-secondary btn-sm">
+              Roll Surprise Life Event 🎲
+            </button>
+            <button id="feed-add-tx-btn" class="btn btn-primary-mint btn-sm">
+              + Log Transaction
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="feed-filters" role="group" aria-label="Transaction filters">
+          <button class="filter-pill active" data-filter="all">All</button>
+          <button class="filter-pill" data-filter="expense">Expenses 💸</button>
+          <button class="filter-pill" data-filter="income">Incomes 💰</button>
+          <button class="filter-pill" data-filter="food">Food</button>
+          <button class="filter-pill" data-filter="bills">Bills</button>
+          <button class="filter-pill" data-filter="social">Social</button>
+        </div>
+
+        <!-- Transactions List -->
+        <div class="transactions-feed" id="transactions-feed-list" role="feed" aria-label="Transactions ledger">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Modal: Add Transaction -->
+  <div class="modal-overlay" id="modal-transaction" role="dialog" aria-modal="true" aria-labelledby="modal-tx-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-tx-title">Log New Transaction</h3>
+        <button class="modal-close" data-close-modal="modal-transaction" aria-label="Close modal">×</button>
+      </div>
+      <form id="form-add-transaction" class="modal-form">
+        <div class="form-group">
+          <label for="tx-title">Title</label>
+          <input type="text" id="tx-title" placeholder="e.g. Chai & Samosa with friends" required />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="tx-amount">Amount (₹)</label>
+            <input type="number" id="tx-amount" placeholder="250" min="1" max="50000" required />
+          </div>
+          <div class="form-group">
+            <label for="tx-day">Day Occurred (1-30)</label>
+            <input type="number" id="tx-day" min="1" max="30" value="6" required />
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="tx-type">Type</label>
+            <select id="tx-type">
+              <option value="expense">Expense 💸</option>
+              <option value="income">Income 💰</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tx-category">Category</label>
+            <select id="tx-category">
+              <option value="food">Food & Drinks 🍕</option>
+              <option value="transit">Metro & Cabs 🚕</option>
+              <option value="social">Hangouts & Parties 🪩</option>
+              <option value="bills">Bills & Utilities ⚡</option>
+              <option value="lifestyle">Shopping & Drip 👟</option>
+              <option value="essentials">Academics & Essentials 📚</option>
+              <option value="misc">Miscellaneous ✨</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tx-note">Note (Optional)</label>
+          <input type="text" id="tx-note" placeholder="Quick comment" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-transaction">Cancel</button>
+          <button type="submit" class="btn btn-primary-mint">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Commitment -->
+  <div class="modal-overlay" id="modal-commitment" role="dialog" aria-modal="true" aria-labelledby="modal-com-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-com-title">Add Recurring Bill or Subscription</h3>
+        <button class="modal-close" data-close-modal="modal-commitment" aria-label="Close modal">×</button>
+      </div>
+      <form id="form-add-commitment" class="modal-form">
+        <div class="form-group">
+          <label for="com-title">Bill Name</label>
+          <input type="text" id="com-title" placeholder="e.g. YouTube Premium Student" required />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="com-amount">Amount (₹)</label>
+            <input type="number" id="com-amount" placeholder="79" min="1" max="50000" required />
+          </div>
+          <div class="form-group">
+            <label for="com-day">Due on Day (1-30)</label>
+            <input type="number" id="com-day" min="1" max="30" value="15" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="com-category">Category</label>
+          <select id="com-category">
+            <option value="subscriptions">Subscriptions 🔄</option>
+            <option value="bills">Hostel / Utility Bills ⚡</option>
+            <option value="lifestyle">Gym / Wellness 🏋️</option>
+          </select>
+        </div>
+        <div class="form-checkbox">
+          <label><input type="checkbox" id="com-autopay" checked /> Auto-deduct when timeline reaches this day</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-commitment">Cancel</button>
+          <button type="submit" class="btn btn-primary-mint">Add Commitment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Savings Goal -->
+  <div class="modal-overlay" id="modal-savings" role="dialog" aria-modal="true" aria-labelledby="modal-sav-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-sav-title">Create Savings Target</h3>
+        <button class="modal-close" data-close-modal="modal-savings" aria-label="Close modal">×</button>
+      </div>
+      <form id="form-add-goal" class="modal-form">
+        <div class="form-group">
+          <label for="goal-title">Goal Name</label>
+          <input type="text" id="goal-title" placeholder="e.g. Goa Trip Stash 🌴" required />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="goal-target">Target Amount (₹)</label>
+            <input type="number" id="goal-target" placeholder="2000" min="100" max="50000" required />
+          </div>
+          <div class="form-group">
+            <label for="goal-initial">Initial Deposit (₹)</label>
+            <input type="number" id="goal-initial" placeholder="300" min="0" value="0" />
+          </div>
+        </div>
+        <div class="form-checkbox">
+          <label><input type="checkbox" id="goal-locked" checked /> Lock Shield (warns before withdrawals)</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-savings">Cancel</button>
+          <button type="submit" class="btn btn-primary-mint">Create Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Life Shock Event Alert -->
+  <div class="modal-overlay" id="modal-life-event" role="dialog" aria-modal="true" aria-labelledby="shock-event-title">
+    <div class="modal-dialog shock-modal-dialog">
+      <div class="shock-badge-header" id="shock-event-tag">SURPRISE LIFE SHOCK</div>
+      <div class="shock-emoji" id="shock-event-emoji" aria-hidden="true">🎲</div>
+      <h3 class="shock-title" id="shock-event-title">Scooter Puncture</h3>
+      <p class="shock-desc" id="shock-event-desc">
+        Rear tire went completely flat near the tea stall. Needed a quick tube patch.
+      </p>
+      <div class="shock-impact-box" id="shock-impact-box">
+        <span class="impact-label">Immediate Impact:</span>
+        <strong class="impact-amount" id="shock-impact-amt">-₹380</strong>
+      </div>
+      <div class="modal-actions shock-actions">
+        <button type="button" id="accept-shock-btn" class="btn btn-primary-mint btn-lg w-full">
+          Face Reality & Apply to Budget ⚡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit/Withdraw Quick Modal -->
+  <div class="modal-overlay" id="modal-savings-action" role="dialog" aria-modal="true" aria-labelledby="savings-action-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="savings-action-title">Manage Savings</h3>
+        <button class="modal-close" data-close-modal="modal-savings-action" aria-label="Close modal">×</button>
+      </div>
+      <form id="form-savings-action" class="modal-form">
+        <input type="hidden" id="action-goal-id" />
+        <input type="hidden" id="action-goal-type" value="deposit" />
+        <div class="form-group">
+          <label for="action-amount" id="action-amount-label">Amount to Deposit (₹)</label>
+          <input type="number" id="action-amount" min="10" max="50000" placeholder="200" required />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="modal-savings-action">Cancel</button>
+          <button type="submit" id="savings-action-submit-btn" class="btn btn-primary-mint">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- Vite entry script -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
