@@ -417,7 +417,7 @@ export class Store {
     const runwayDays = actualAvgDailySpend > 0 ? Math.floor(rawBalance / actualAvgDailySpend) : 99;
 
     // Financial Health Score Algorithm (0 to 100)
-    let runwayScore = 0;
+    let runwayScore;
     if (runwayDays >= daysRemaining) {
       runwayScore = 35;
     } else {
@@ -436,7 +436,7 @@ export class Store {
     const savingsRatio = totalSavingsTarget > 0 ? Math.min(1, totalSavingsSaved / totalSavingsTarget) : 1;
     const savingsScore = Math.round(20 * savingsRatio);
 
-    let spendDisciplineScore = 0;
+    let spendDisciplineScore;
     if (actualAvgDailySpend <= safeDailySpend) {
       spendDisciplineScore = 20;
     } else {
@@ -469,7 +469,7 @@ export class Store {
       riskDescription = 'Top tier discipline. You will easily hit Day 30 with a healthy surplus.';
     }
 
-    let vibeMood = '😎 Chill & Steady';
+    let vibeMood;
     if (healthScore >= 88) vibeMood = '⚡ God Tier Mogul';
     else if (healthScore >= 72) vibeMood = '✨ Pretty Solid';
     else if (healthScore >= 55) vibeMood = '⚠️ Squeezing By';

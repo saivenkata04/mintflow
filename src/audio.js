@@ -46,7 +46,7 @@ class SoundEffects {
 
       osc.start();
       osc.stop(this.ctx.currentTime + 0.05);
-    } catch (e) {
+    } catch (_err) {
       // Audio autoplay policy catch
     }
   }
@@ -64,17 +64,23 @@ class SoundEffects {
 
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(987.77, now); // B5
-      osc1.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1318.51, now + 0.08); // E6
 
       gain.gain.setValueAtTime(0.12, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
       osc1.connect(gain);
+      osc2.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc1.start(now);
-      osc1.stop(now + 0.35);
-    } catch (e) {}
+      osc1.stop(now + 0.15);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.35);
+    } catch (_err) {
+      // Audio autoplay policy catch
+    }
   }
 
   playWarning() {
@@ -99,7 +105,9 @@ class SoundEffects {
 
       osc.start(now);
       osc.stop(now + 0.22);
-    } catch (e) {}
+    } catch (_err) {
+      // Audio autoplay policy catch
+    }
   }
 
   playSuccess() {
@@ -126,7 +134,9 @@ class SoundEffects {
         osc.start(startTime);
         osc.stop(startTime + 0.3);
       });
-    } catch (e) {}
+    } catch (_err) {
+      // Audio autoplay policy catch
+    }
   }
 }
 
